@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tilewarden"
+version = "0.1.0"
+description = "Read-only GCP tile inventory CLI that writes per-level tile footprints."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = ["google-cloud-storage>=2.18", "tqdm>=4.66"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[project.scripts]
+tilewarden = "tilewarden.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tilewarden"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
