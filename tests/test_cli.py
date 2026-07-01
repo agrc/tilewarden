@@ -8,6 +8,7 @@ from io import StringIO
 import pytest
 
 from tilewarden import cli
+from tilewarden.gcs import ListingParameters
 from tilewarden.inventory import SourceObject
 
 
@@ -23,9 +24,11 @@ def test_inventory_cli_writes_outputs_and_prints_summary(monkeypatch, tmp_path, 
     date_created = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
     date_last_modified = datetime(2026, 1, 3, 3, 4, 5, tzinfo=UTC)
 
-    def fake_list_source_objects(*, bucket_name, prefix, project):
+    def fake_list_source_objects(*, bucket_name, prefix, layout, level_filter, project):
         assert bucket_name == "tiles"
         assert prefix == "Terrain/"
+        assert layout == "prefix/z/x/y"
+        assert level_filter is None
         assert project == "proj"
         return [
             source_object("Terrain/0/0/0"),
@@ -38,6 +41,11 @@ def test_inventory_cli_writes_outputs_and_prints_summary(monkeypatch, tmp_path, 
             source_object("Terrain/readme.txt"),
         ]
 
+    monkeypatch.setattr(
+        cli,
+        "discover_listing_parameters",
+        lambda **_kwargs: ListingParameters(layout="prefix/z/x/y", prefix="Terrain/"),
+    )
     monkeypatch.setattr(cli, "list_source_objects", fake_list_source_objects)
 
     exit_code = cli.main(
@@ -177,7 +185,7 @@ def test_print_summary_formats_date_ranges_as_dates(tmp_path):
 
 
 def test_inventory_cli_progress_always_updates_listing_and_writing(monkeypatch, tmp_path, capsys):
-    def fake_list_source_objects(*, bucket_name, prefix, project):
+    def fake_list_source_objects(*, bucket_name, prefix, layout, level_filter, project):
         return [
             source_object("Terrain/0/0/0"),
             source_object("Terrain/1/0/0"),
@@ -203,6 +211,11 @@ def test_inventory_cli_progress_always_updates_listing_and_writing(monkeypatch, 
     fake_tqdm = types.ModuleType("tqdm")
     fake_tqdm.tqdm = FakeTqdm
     monkeypatch.setitem(sys.modules, "tqdm", fake_tqdm)
+    monkeypatch.setattr(
+        cli,
+        "discover_listing_parameters",
+        lambda **_kwargs: ListingParameters(layout="prefix/z/x/y", prefix="Terrain/"),
+    )
     monkeypatch.setattr(cli, "list_source_objects", fake_list_source_objects)
 
     exit_code = cli.main(
@@ -257,9 +270,10 @@ def test_inventory_cli_rejects_invalid_levels(tmp_path, capsys):
 
 
 def test_inventory_cli_writes_summary_when_no_matching_tiles(monkeypatch, tmp_path, capsys):
-    def fake_list_source_objects(*, bucket_name, prefix, project):
+    def fake_list_source_objects(*, bucket_name, prefix, layout, level_filter, project):
         return [source_object("metadata.json")]
 
+    monkeypatch.setattr(cli, "discover_listing_parameters", lambda **_kwargs: None)
     monkeypatch.setattr(cli, "list_source_objects", fake_list_source_objects)
 
     exit_code = cli.main(["inventory", "tiles", "--output", str(tmp_path)])
@@ -271,6 +285,60 @@ def test_inventory_cli_writes_summary_when_no_matching_tiles(monkeypatch, tmp_pa
     assert "No matching tiles found." in captured.err
     assert summary["total_tile_count"] == 0
     assert summary["generated_file_count"] == 0
+
+
+def test_inventory_cli_uses_discovered_prefix_and_layout(monkeypatch, tmp_path, capsys):
+    def fake_discover_listing_parameters(*, bucket_name, prefix, layout, project):
+        assert bucket_name == "tiles"
+        assert prefix == ""
+        assert layout == "auto"
+        assert project is None
+        return ListingParameters(layout="prefix/z/x/y", prefix="Terrain/")
+
+    def fake_list_source_objects(*, bucket_name, prefix, layout, level_filter, project):
+        assert prefix == "Terrain/"
+        assert layout == "prefix/z/x/y"
+        assert level_filter == {1}
+        return [source_object("Terrain/1/0/0")]
+
+    monkeypatch.setattr(cli, "discover_listing_parameters", fake_discover_listing_parameters)
+    monkeypatch.setattr(cli, "list_source_objects", fake_list_source_objects)
+
+    exit_code = cli.main(["inventory", "tiles", "--output", str(tmp_path), "--levels", "1"])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Prefix: Terrain/" in captured.out
+    assert "Layout: prefix/z/x/y" in captured.out
+
+
+def test_inventory_cli_skips_discovery_when_layout_and_prefix_are_explicit(monkeypatch, tmp_path):
+    def fake_discover_listing_parameters(**_kwargs):
+        raise AssertionError("discovery should not run")
+
+    def fake_list_source_objects(*, bucket_name, prefix, layout, level_filter, project):
+        assert prefix == "Terrain/"
+        assert layout == "prefix/z/x/y"
+        return [source_object("Terrain/1/0/0")]
+
+    monkeypatch.setattr(cli, "discover_listing_parameters", fake_discover_listing_parameters)
+    monkeypatch.setattr(cli, "list_source_objects", fake_list_source_objects)
+
+    exit_code = cli.main(
+        [
+            "inventory",
+            "tiles",
+            "--output",
+            str(tmp_path),
+            "--prefix",
+            "Terrain/",
+            "--layout",
+            "prefix/z/x/y",
+        ]
+    )
+
+    assert exit_code == 0
 
 
 def test_inventory_cli_rejects_removed_format_option(tmp_path):

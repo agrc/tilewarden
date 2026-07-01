@@ -24,13 +24,18 @@ def write_inventory_outputs(
 ) -> tuple[dict[int, Path], Path, dict[str, object]]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    effective_layout = inventory.resolved_layout or layout
+    effective_prefix = (
+        inventory.resolved_prefix if inventory.resolved_prefix is not None else prefix
+    )
+
     output_files: dict[int, Path] = {}
     if inventory.tiles_by_level:
         geopackage_path = write_inventory_geopackage(
             output_dir=output_dir,
             bucket=bucket,
-            prefix=prefix,
-            layout=layout,
+            prefix=effective_prefix,
+            layout=effective_layout,
             matrix_set=matrix_set,
             tiles_by_level=inventory.tiles_by_level,
             progress=progress,
@@ -38,13 +43,11 @@ def write_inventory_outputs(
         output_files = {level: geopackage_path for level in inventory.tiles_by_level}
 
     stats = inventory.level_stats(output_files)
-    summary_layout = inventory.resolved_layout or layout
-    summary_prefix = inventory.resolved_prefix if inventory.resolved_prefix is not None else prefix
     summary = build_summary(
         inventory=inventory,
         bucket=bucket,
-        prefix=summary_prefix,
-        layout=summary_layout,
+        prefix=effective_prefix,
+        layout=effective_layout,
         matrix_set=matrix_set,
         levels_option=levels_option,
         output_dir=output_dir,

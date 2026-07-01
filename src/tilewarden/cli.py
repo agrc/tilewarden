@@ -8,7 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol, TextIO
 
-from tilewarden.gcs import GCSListingError, list_source_objects
+from tilewarden.gcs import GCSListingError, discover_listing_parameters, list_source_objects
 from tilewarden.inventory import build_inventory
 from tilewarden.output import write_inventory_outputs
 from tilewarden.parsing import (
@@ -100,6 +100,25 @@ def run_inventory(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -
         print(f"Invalid --levels: {exc}", file=stderr)
         return 2
 
+    effective_prefix = args.prefix
+    effective_layout = args.layout
+    if _should_discover_listing(prefix=args.prefix, layout=args.layout):
+        try:
+            discovered = discover_listing_parameters(
+                bucket_name=args.bucket_name,
+                prefix=args.prefix,
+                layout=args.layout,
+                project=args.project,
+            )
+        except GCSListingError as exc:
+            print(str(exc), file=stderr)
+            return 1
+        if discovered is not None:
+            if args.layout == "auto":
+                effective_layout = discovered.layout
+            if args.prefix == "":
+                effective_prefix = discovered.prefix
+
     progress_enabled = _should_show_progress(args.progress, stderr)
     overall_progress = _make_progress_bar(
         enabled=progress_enabled,
@@ -122,10 +141,12 @@ def run_inventory(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -
             inventory = build_inventory(
                 list_source_objects(
                     bucket_name=args.bucket_name,
-                    prefix=args.prefix,
+                    prefix=effective_prefix,
+                    layout=effective_layout,
+                    level_filter=level_filter,
                     project=args.project,
                 ),
-                layout=args.layout,
+                layout=effective_layout,
                 level_filter=level_filter,
                 progress=_progress_update(inventory_progress),
             )
@@ -158,8 +179,8 @@ def run_inventory(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -
                 inventory,
                 output_dir=args.output,
                 bucket=args.bucket_name,
-                prefix=args.prefix,
-                layout=args.layout,
+                prefix=effective_prefix,
+                layout=effective_layout,
                 matrix_set=args.matrix_set,
                 levels_option=args.levels,
                 progress=_progress_update(write_progress),
@@ -179,9 +200,9 @@ def run_inventory(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -
 
     stats = inventory.level_stats(output_files)
     summary_prefix = (
-        inventory.resolved_prefix if inventory.resolved_prefix is not None else args.prefix
+        inventory.resolved_prefix if inventory.resolved_prefix is not None else effective_prefix
     )
-    summary_layout = inventory.resolved_layout or args.layout
+    summary_layout = inventory.resolved_layout or effective_layout
     print_summary(
         inventory=inventory,
         stats=stats,
@@ -198,6 +219,10 @@ def run_inventory(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -
         print("No matching tiles found.", file=stderr)
         return 1
     return 0
+
+
+def _should_discover_listing(*, prefix: str, layout: str) -> bool:
+    return layout == "auto" or (prefix == "" and layout.startswith("prefix/"))
 
 
 def _should_show_progress(progress: str, stderr: TextIO) -> bool:

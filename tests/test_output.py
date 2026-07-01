@@ -87,7 +87,7 @@ def test_write_inventory_outputs_creates_geopackage_and_summary(tmp_path):
     assert properties == (
         "example-bucket",
         "Terrain/",
-        "auto",
+        "prefix/z/x/y",
         "webmercator",
         "Terrain/1/0/0",
         date_created_0.isoformat(),

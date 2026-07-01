@@ -5,6 +5,7 @@
   "python.testing.pytestEnabled": true,
   "cSpell.words": [
     "EPSG",
+    "geopackage",
     "geospatial",
     "mininterval",
     "pyproject",
@@ -17,5 +18,15 @@
     "webmercator",
     "wkid",
     "WMTS"
-  ]
+  ],
+  "chat.tools.terminal.autoApprove": {
+    "/^conda activate tilewarden && ruff check \\. && ruff format --check \\.$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^conda activate tilewarden && python -m pytest$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
 }
