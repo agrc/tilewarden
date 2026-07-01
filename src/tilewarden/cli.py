@@ -6,7 +6,10 @@ import argparse
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from time import perf_counter
 from typing import Protocol, TextIO
+
+import humanize
 
 from tilewarden.gcs import GCSListingError, discover_listing_parameters, list_source_objects
 from tilewarden.inventory import build_inventory
@@ -94,6 +97,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def run_inventory(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -> int:
+    start_time = perf_counter()
+
     try:
         level_filter = parse_level_filter(args.levels)
     except LevelParseError as exc:
@@ -183,6 +188,7 @@ def run_inventory(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -
                 layout=effective_layout,
                 matrix_set=args.matrix_set,
                 levels_option=args.levels,
+                processing_time_seconds=perf_counter() - start_time,
                 progress=_progress_update(write_progress),
             )
         except OSError as exc:
@@ -212,6 +218,7 @@ def run_inventory(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -
         matrix_set=args.matrix_set,
         output_dir=args.output,
         summary_path=summary_path,
+        processing_time_seconds=perf_counter() - start_time,
         stdout=stdout,
     )
 
@@ -278,6 +285,7 @@ def print_summary(
     matrix_set: str,
     output_dir: Path,
     summary_path: Path,
+    processing_time_seconds: float,
     stdout: TextIO,
 ) -> None:
     print("Tile inventory complete", file=stdout)
@@ -289,6 +297,10 @@ def print_summary(
     print(f"Skipped object count: {inventory.skipped_object_count:,}", file=stdout)
     print(f"Excluded by level count: {inventory.excluded_by_level_count:,}", file=stdout)
     print(f"Total tile count: {inventory.total_tile_count:,}", file=stdout)
+    print(
+        f"Total processing time: {_format_duration_seconds(processing_time_seconds)}",
+        file=stdout,
+    )
     generated_file_count = len({stat.output_file for stat in stats if stat.output_file is not None})
     print(f"Generated file count: {generated_file_count:,}", file=stdout)
     print(f"Summary JSON path: {summary_path}", file=stdout)
@@ -329,3 +341,7 @@ def _format_summary_row(row, widths) -> str:
     level, tiles, last_modified = row
     level_width, tiles_width, last_modified_width = widths
     return f"{level:>{level_width}}  {tiles:>{tiles_width}}  {last_modified:<{last_modified_width}}"
+
+
+def _format_duration_seconds(seconds: float) -> str:
+    return humanize.precisedelta(seconds, minimum_unit="seconds", format="%0.3f")

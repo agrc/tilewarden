@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Read-only GCP tile inventory CLI that writes per-level tile footprints."
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["geopandas>=1.0", "google-cloud-storage>=2.18", "tqdm>=4.66"]
+dependencies = ["geopandas>=1.0", "google-cloud-storage>=2.18", "humanize>=4.16", "tqdm>=4.66"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6"]

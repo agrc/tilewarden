@@ -46,6 +46,7 @@ def test_write_inventory_outputs_creates_geopackage_and_summary(tmp_path):
         layout="auto",
         matrix_set="webmercator",
         levels_option=None,
+        processing_time_seconds=1.25,
     )
 
     assert sorted(output_files) == [0, 1]
@@ -54,6 +55,7 @@ def test_write_inventory_outputs_creates_geopackage_and_summary(tmp_path):
     assert summary_path.name == "example-bucket-summary.json"
     assert summary["prefix"] == "Terrain/"
     assert summary["layout"] == "prefix/z/x/y"
+    assert summary["total_processing_time_seconds"] == 1.25
     assert summary["skipped_object_count"] == 1
     assert summary["total_tile_count"] == 3
 
@@ -102,6 +104,7 @@ def test_write_inventory_outputs_creates_geopackage_and_summary(tmp_path):
     assert written_summary["generated_file_count"] == 1
     assert written_summary["prefix"] == "Terrain/"
     assert written_summary["layout"] == "prefix/z/x/y"
+    assert written_summary["total_processing_time_seconds"] == 1.25
     assert written_summary["generated_files"] == [str(output_files[1])]
     assert written_summary["min_date_created"] == date_created_0.isoformat()
     assert written_summary["max_date_created"] == date_created_1.isoformat()
@@ -124,6 +127,7 @@ def test_write_inventory_outputs_sanitizes_bucket_name(tmp_path):
         layout="auto",
         matrix_set="webmercator",
         levels_option="0",
+        processing_time_seconds=0.5,
     )
 
     assert output_files[0].name == "bucket_name-tile-footprints.gpkg"

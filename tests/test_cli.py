@@ -23,6 +23,7 @@ def source_object(name, *, date_created=None, date_last_modified=None):
 def test_inventory_cli_writes_outputs_and_prints_summary(monkeypatch, tmp_path, capsys):
     date_created = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
     date_last_modified = datetime(2026, 1, 3, 3, 4, 5, tzinfo=UTC)
+    perf_counter_values = iter((100.0, 101.25, 101.25))
 
     def fake_list_source_objects(*, bucket_name, prefix, layout, level_filter, project):
         assert bucket_name == "tiles"
@@ -47,6 +48,7 @@ def test_inventory_cli_writes_outputs_and_prints_summary(monkeypatch, tmp_path, 
         lambda **_kwargs: ListingParameters(layout="prefix/z/x/y", prefix="Terrain/"),
     )
     monkeypatch.setattr(cli, "list_source_objects", fake_list_source_objects)
+    monkeypatch.setattr(cli, "perf_counter", lambda: next(perf_counter_values))
 
     exit_code = cli.main(
         [
@@ -74,6 +76,7 @@ def test_inventory_cli_writes_outputs_and_prints_summary(monkeypatch, tmp_path, 
     assert "Layout: prefix/z/x/y" in captured.out
     assert "Skipped object count: 1" in captured.out
     assert "Total tile count: 3" in captured.out
+    assert "Total processing time: 1.250 seconds" in captured.out
     assert "Generated file count: 1" in captured.out
     assert "Level  Tiles  Last modified" in captured.out
     assert "Output file" not in captured.out
@@ -90,6 +93,7 @@ def test_inventory_cli_writes_outputs_and_prints_summary(monkeypatch, tmp_path, 
     assert summary["generated_file_count"] == 1
     assert summary["prefix"] == "Terrain/"
     assert summary["layout"] == "prefix/z/x/y"
+    assert summary["total_processing_time_seconds"] == 1.25
     assert summary["min_date_created"] == date_created.isoformat()
     assert summary["max_date_last_modified"] == date_last_modified.isoformat()
     assert [level["level"] for level in summary["levels_summary"]] == [0, 1]
@@ -132,12 +136,14 @@ def test_print_summary_formats_tile_counts_with_commas(tmp_path):
         matrix_set="webmercator",
         output_dir=tmp_path,
         summary_path=tmp_path / "tiles-summary.json",
+        processing_time_seconds=12.345,
         stdout=stdout,
     )
 
     output = stdout.getvalue()
 
     assert "Total tile count: 1,234" in output
+    assert "Total processing time: 12.345 seconds" in output
     assert "   11  1,234" in output
     assert "2026-01-02" not in output
     assert "2026-01-03" in output
@@ -174,6 +180,7 @@ def test_print_summary_formats_date_ranges_as_dates(tmp_path):
         matrix_set="webmercator",
         output_dir=tmp_path,
         summary_path=tmp_path / "tiles-summary.json",
+        processing_time_seconds=0.5,
         stdout=stdout,
     )
 

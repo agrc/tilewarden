@@ -20,6 +20,7 @@ def write_inventory_outputs(
     layout: str,
     matrix_set: str,
     levels_option: str | None,
+    processing_time_seconds: float,
     progress: Callable[[], None] | None = None,
 ) -> tuple[dict[int, Path], Path, dict[str, object]]:
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -52,6 +53,7 @@ def write_inventory_outputs(
         levels_option=levels_option,
         output_dir=output_dir,
         stats=stats,
+        processing_time_seconds=processing_time_seconds,
     )
     summary_path = output_dir / f"{_safe_name(bucket)}-summary.json"
     with summary_path.open("w", encoding="utf-8") as summary_file:
@@ -71,6 +73,7 @@ def build_summary(
     levels_option: str | None,
     output_dir: Path,
     stats: list[LevelStats],
+    processing_time_seconds: float,
 ) -> dict[str, object]:
     generated_files = sorted(
         {str(stat.output_file) for stat in stats if stat.output_file is not None}
@@ -95,6 +98,7 @@ def build_summary(
         "matrix_set": matrix_set,
         "levels": levels_option,
         "output_dir": str(output_dir),
+        "total_processing_time_seconds": round(processing_time_seconds, 3),
         "skipped_object_count": inventory.skipped_object_count,
         "excluded_by_level_count": inventory.excluded_by_level_count,
         "total_tile_count": inventory.total_tile_count,
