@@ -150,7 +150,7 @@ def run_inventory(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -
             unit=" tiles",
             bar_format=(
                 "{desc}: {percentage:3.0f}%|{bar}| "
-                "{n_fmt:,}/{total_fmt:,} tiles [{elapsed}<{remaining}, {rate_fmt}]"
+                "{n_fmt}/{total_fmt} tiles [{elapsed}<{remaining}, {rate_fmt}]"
             ),
         )
         try:
@@ -255,7 +255,6 @@ def print_summary(
     summary_path: Path,
     stdout: TextIO,
 ) -> None:
-    print("**********************")
     print("Tile inventory complete", file=stdout)
     print(f"Bucket: {bucket}", file=stdout)
     print(f"Prefix: {prefix or '(none)'}", file=stdout)
