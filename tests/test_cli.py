@@ -240,14 +240,14 @@ def test_inventory_cli_progress_always_updates_listing_and_writing(monkeypatch, 
         "Overall progress",
         2,
         " phases",
-        "{desc}: {n_fmt}/{total_fmt} phases",
+        "{desc}: {n:,.0f}/{total:,.0f} phases",
     ) in events
     assert (
         "start",
         "Listing and parsing objects",
         None,
         " objects",
-        "{desc}: {n_fmt} objects [{elapsed}, {rate_fmt}]",
+        "{desc}: {n:,.0f} objects [{elapsed}, {rate_fmt}]",
     ) in events
     assert (
         "start",
@@ -255,7 +255,7 @@ def test_inventory_cli_progress_always_updates_listing_and_writing(monkeypatch, 
         3,
         " tiles",
         "{desc}: {percentage:3.0f}%|{bar}| "
-        "{n_fmt}/{total_fmt} tiles [{elapsed}<{remaining}, {rate_fmt}]",
+        "{n:,.0f}/{total:,.0f} tiles [{elapsed}<{remaining}, {rate_fmt}]",
     ) in events
     assert events.count(("update", "Listing and parsing objects", 1)) == 4
     assert events.count(("update", "Writing GeoPackage features", 1)) == 3

@@ -126,7 +126,7 @@ def run_inventory(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -
         total=2,
         desc="Overall progress",
         unit=" phases",
-        bar_format="{desc}: {n_fmt}/{total_fmt} phases",
+        bar_format="{desc}: {n:,.0f}/{total:,.0f} phases",
     )
     try:
         inventory_progress = _make_progress_bar(
@@ -135,7 +135,7 @@ def run_inventory(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -
             total=None,
             desc="Listing and parsing objects",
             unit=" objects",
-            bar_format="{desc}: {n_fmt} objects [{elapsed}, {rate_fmt}]",
+            bar_format="{desc}: {n:,.0f} objects [{elapsed}, {rate_fmt}]",
         )
         try:
             inventory = build_inventory(
@@ -171,7 +171,7 @@ def run_inventory(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -
             unit=" tiles",
             bar_format=(
                 "{desc}: {percentage:3.0f}%|{bar}| "
-                "{n_fmt}/{total_fmt} tiles [{elapsed}<{remaining}, {rate_fmt}]"
+                "{n:,.0f}/{total:,.0f} tiles [{elapsed}<{remaining}, {rate_fmt}]"
             ),
         )
         try:
