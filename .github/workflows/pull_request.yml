@@ -1,0 +1,36 @@
+name: Pull Request Events
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  test-unit:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Set up code
+        uses: actions/checkout@v6
+        with:
+          show-progress: false
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v6
+        with:
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: 🏗 Install module
+        run: pip install .[dev]
+
+      - name: 🧶 Lint
+        run: ruff check --output-format=github .
+
+      - name: 🧪 Unit Tests
+        run: pytest
