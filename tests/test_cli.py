@@ -67,9 +67,9 @@ def test_inventory_cli_writes_outputs_and_prints_summary(monkeypatch, tmp_path, 
     assert "Skipped object count: 1" in captured.out
     assert "Total tile count: 3" in captured.out
     assert "Generated file count: 1" in captured.out
-    assert "Level  Tiles  Created     Last modified" in captured.out
+    assert "Level  Tiles  Last modified" in captured.out
     assert "Output file" not in captured.out
-    assert "2026-01-02" in captured.out
+    assert "2026-01-02" not in captured.out
     assert "2026-01-03" in captured.out
     assert date_created.isoformat() not in captured.out
     assert date_last_modified.isoformat() not in captured.out
@@ -131,7 +131,7 @@ def test_print_summary_formats_tile_counts_with_commas(tmp_path):
 
     assert "Total tile count: 1,234" in output
     assert "   11  1,234" in output
-    assert "2026-01-02" in output
+    assert "2026-01-02" not in output
     assert "2026-01-03" in output
     assert date_created.isoformat() not in output
     assert date_last_modified.isoformat() not in output
@@ -171,7 +171,7 @@ def test_print_summary_formats_date_ranges_as_dates(tmp_path):
 
     output = stdout.getvalue()
 
-    assert "2025-07-29 to 2025-07-30" in output
+    assert "2025-07-29 to 2025-07-30" not in output
     assert "2025-07-29 to 2025-08-01" in output
     assert "05:39:25" not in output
 

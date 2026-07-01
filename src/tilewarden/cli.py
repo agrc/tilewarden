@@ -276,12 +276,11 @@ def print_summary(
         (
             str(stat.level),
             f"{stat.tile_count:,}",
-            _date_range(stat.min_date_created, stat.max_date_created),
             _date_range(stat.min_date_last_modified, stat.max_date_last_modified),
         )
         for stat in stats
     ]
-    headers = ("Level", "Tiles", "Created", "Last modified")
+    headers = ("Level", "Tiles", "Last modified")
     widths = tuple(
         max(len(header), *(len(row[index]) for row in rows)) for index, header in enumerate(headers)
     )
@@ -302,11 +301,6 @@ def _date_range(start, end) -> str:
 
 
 def _format_summary_row(row, widths) -> str:
-    level, tiles, created, last_modified = row
-    level_width, tiles_width, created_width, last_modified_width = widths
-    return (
-        f"{level:>{level_width}}  "
-        f"{tiles:>{tiles_width}}  "
-        f"{created:<{created_width}}  "
-        f"{last_modified:<{last_modified_width}}"
-    )
+    level, tiles, last_modified = row
+    level_width, tiles_width, last_modified_width = widths
+    return f"{level:>{level_width}}  {tiles:>{tiles_width}}  {last_modified:<{last_modified_width}}"
